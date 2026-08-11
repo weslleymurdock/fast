@@ -5,6 +5,7 @@ FROM debian:12-slim
 ARG DEBIAN_FRONTEND=noninteractive
 ARG ASTERISK_VERSION=22.10.1
 ARG BCG729_VERSION=1.1.1
+ARG ASTERISK_G72X_COMMIT=55a7b8246c8ad3f32e50a033529e5a52c11a5592
 ARG OPENH264_VERSION=2.6.0
 ARG OPUS_VERSION=1.5.2
 ARG FREEPBX_REF=release/17.0
@@ -35,11 +36,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN id asterisk >/dev/null 2>&1 || useradd --system --home /var/lib/asterisk --create-home --shell /usr/sbin/nologin asterisk
 
+# bcg729 provides the open-source G.729 implementation used by the Asterisk G.72x module.
 RUN mkdir -p /usr/src && cd /usr/src \
     && git clone --depth 1 --branch ${BCG729_VERSION} https://github.com/BelledonneCommunications/bcg729.git bcg729 \
-    && cmake -S bcg729 -B bcg729/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake -S bcg729 -B bcg729/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
     && cmake --build bcg729/build --parallel "$(nproc)" && cmake --install bcg729/build \
     && ldconfig && rm -rf bcg729
+
+# Build the GPL codec module against the exact Asterisk 22 headers and the pinned
+# upstream commit which explicitly added Asterisk 22 support.
+RUN mkdir -p /usr/src && cd /usr/src \
+    && git clone --depth 1 https://github.com/arkadijs/asterisk-g72x.git asterisk-g72x \
+    && cd asterisk-g72x && git checkout ${ASTERISK_G72X_COMMIT} \
+    && ./autogen.sh \
+    && ./configure --with-asterisk160 --with-bcg729 --with-asterisk-includes=/usr/include --prefix=/usr \
+    && make -j"$(nproc)" && make install \
+    && ldconfig && cd / && rm -rf /usr/src/asterisk-g72x
 
 RUN mkdir -p /usr/src && cd /usr/src \
     && git clone --depth 1 --branch v${OPENH264_VERSION} https://github.com/cisco/openh264.git openh264 \
@@ -52,13 +64,15 @@ RUN mkdir -p /usr/src && cd /usr/src \
     && ./configure --prefix=/usr --disable-doc && make -j"$(nproc)" && make install \
     && ldconfig && cd / && rm -rf /usr/src/opus*
 
+# Build Asterisk 22 LTS with pjproject bundled by Asterisk itself. This keeps PJSIP
+# aligned with the Asterisk release instead of taking an unrelated latest pjproject.
 RUN mkdir -p /usr/src && cd /usr/src \
     && curl -fsSL https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz -o asterisk.tar.gz \
     && tar -xzf asterisk.tar.gz && cd asterisk-${ASTERISK_VERSION} \
     && contrib/scripts/install_prereq install \
     && ./configure --with-pjproject-bundled --with-jansson --with-ssl --with-srtp \
     && make menuselect.makeopts \
-    && menuselect/menuselect --enable codec_opus --enable codec_g729a --enable codec_h264 \
+    && menuselect/menuselect --enable codec_opus --enable codec_h264 \
          --enable res_pjsip --enable res_pjsip_transport_websocket --enable chan_pjsip \
          --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts || true \
     && make -j"$(nproc)" && make install && make samples && ldconfig \
