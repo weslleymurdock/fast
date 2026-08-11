@@ -2,6 +2,8 @@ services:
   mariadb:
     image: mariadb:11.4
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    env_file:
+      - ../.env
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
       MARIADB_ROOT_HOST: "%"
@@ -28,15 +30,11 @@ services:
         FREEPBX_REF: "release/17.0"
     image: ghcr.io/weslleymurdock/fast:freepbx17-asterisk22
     network_mode: host
+    env_file:
+      - ../.env
     environment:
-      TZ: ${TZ:-America/Sao_Paulo}
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
-      DB_NAME: ${DB_NAME:-asterisk}
-      DB_CDR_NAME: ${DB_CDR_NAME:-asteriskcdrdb}
-      DB_USER: ${DB_USER:?DB_USER is required}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
       RTP_START: ${RTP_START:-10000}
       RTP_END: ${RTP_END:-20000}
     depends_on:
