@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmariadb-dev libmariadb-dev-compat libsrtp2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Exact OpenSSL 1.1.1s, isolated under /opt/artifact so Debian's system OpenSSL is untouched.
 FROM build-base AS openssl
 ARG OPENSSL_VERSION
 RUN curl -fsSL "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" -o /tmp/openssl.tar.gz \
@@ -36,9 +35,9 @@ RUN curl -fsSL "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
 FROM build-base AS pjproject
 ARG PJSIP_VERSION
 COPY --from=openssl /opt/artifact/ /opt/openssl/
-ENV PKG_CONFIG_PATH=/opt/openssl/lib/pkgconfig
-ENV CPPFLAGS=-I/opt/openssl/include
-ENV LDFLAGS=-L/opt/openssl/lib
+ENV PKG_CONFIG_PATH="/opt/openssl/lib/pkgconfig"
+ENV CPPFLAGS="-I/opt/openssl/include"
+ENV LDFLAGS="-L/opt/openssl/lib"
 RUN git clone --depth 1 --branch "${PJSIP_VERSION}" https://github.com/pjsip/pjproject.git /usr/src/pjproject \
     && cd /usr/src/pjproject \
     && ./configure --prefix=/opt/artifact --with-ssl=/opt/openssl --disable-sound --disable-video \
@@ -73,10 +72,10 @@ COPY --from=pjproject /opt/artifact/ /opt/dependencies/
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
 COPY --from=codec-opus /opt/artifact/ /opt/dependencies/
 COPY --from=codec-openh264 /opt/artifact/ /opt/dependencies/
-ENV PKG_CONFIG_PATH=/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig
-ENV CPPFLAGS=-I/opt/dependencies/include
-ENV LDFLAGS=-L/opt/dependencies/lib -L/opt/dependencies/lib64
-ENV LD_LIBRARY_PATH=/opt/dependencies/lib:/opt/dependencies/lib64
+ENV PKG_CONFIG_PATH="/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig"
+ENV CPPFLAGS="-I/opt/dependencies/include"
+ENV LDFLAGS="-L/opt/dependencies/lib -L/opt/dependencies/lib64"
+ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64"
 RUN cp -a /opt/dependencies/. /usr/local/ \
     && ldconfig \
     && curl -fsSL "https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz" -o /tmp/asterisk.tar.gz \
@@ -94,8 +93,8 @@ ARG ASTERISK_G72X_COMMIT
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
-ENV PKG_CONFIG_PATH=/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig
-ENV LD_LIBRARY_PATH=/opt/dependencies/lib:/opt/dependencies/lib64:/usr/local/lib
+ENV PKG_CONFIG_PATH="/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig"
+ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64:/usr/local/lib"
 RUN cp -a /opt/dependencies/. /usr/local/ \
     && ldconfig \
     && git clone --depth 1 https://github.com/arkadijs/asterisk-g72x.git /usr/src/asterisk-g72x \
