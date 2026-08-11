@@ -1,13 +1,21 @@
 # syntax=docker/dockerfile:1.7
 
 ARG ASTERISK_VERSION=22.10.1
+ARG ASTERISK_REPOSITORY=https://github.com/asterisk/asterisk.git
 ARG PJSIP_VERSION=2.17
+ARG PJSIP_REPOSITORY=https://github.com/pjsip/pjproject.git
 ARG OPENSSL_VERSION=1_1_1s
+ARG OPENSSL_REPOSITORY=https://github.com/openssl/openssl.git
 ARG BCG729_VERSION=1.1.1
-ARG ASTERISK_G72X_COMMIT=55a7b8246c8ad3f32e50a033529e5a52c11a5592
+ARG BCG729_REPOSITORY=https://github.com/BelledonneCommunications/bcg729.git
 ARG OPENH264_VERSION=2.3.0
+ARG OPENH264_REPOSITORY=https://github.com/cisco/openh264.git
 ARG OPUS_VERSION=1.4.0
+ARG OPUS_REPOSITORY=https://github.com/xiph/opus.git
+ARG ASTERISK_G72X_COMMIT=55a7b8246c8ad3f32e50a033529e5a52c11a5592
+ARG ASTERISK_G72X_REPOSITORY=https://github.com/arkadijs/asterisk-g72x.git
 ARG FREEPBX_REF=release/17.0
+ARG FREEPBX_REPOSITORY=https://github.com/FreePBX/framework.git
 
 FROM debian:12-slim AS build-base
 ARG DEBIAN_FRONTEND=noninteractive
@@ -26,47 +34,67 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM build-base AS openssl
 ARG OPENSSL_VERSION
-RUN curl -fsSL "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" -o /tmp/openssl.tar.gz \
-    && tar -xzf /tmp/openssl.tar.gz -C /usr/src \
-    && cd "/usr/src/openssl-${OPENSSL_VERSION}" \
+ARG OPENSSL_REPOSITORY
+RUN git clone --branch main --single-branch --no-tags "${OPENSSL_REPOSITORY}" /usr/src/openssl \
+    && cd /usr/src/openssl \
+    && git fetch --tags --force \
+    && git checkout --detach "openssl-${OPENSSL_VERSION}" \
     && ./config --prefix=/opt/artifact --openssldir=/opt/artifact/ssl shared no-tests \
-    && make -j"$(nproc)" && make install_sw
+    && make -j"$(nproc)" \
+    && make install_sw
 
 FROM build-base AS pjproject
 ARG PJSIP_VERSION
+ARG PJSIP_REPOSITORY
 COPY --from=openssl /opt/artifact/ /opt/openssl/
 ENV PKG_CONFIG_PATH="/opt/openssl/lib/pkgconfig"
 ENV CPPFLAGS="-I/opt/openssl/include"
 ENV LDFLAGS="-L/opt/openssl/lib"
-RUN git clone --depth 1 --branch "${PJSIP_VERSION}" https://github.com/pjsip/pjproject.git /usr/src/pjproject \
+RUN git clone --branch main --single-branch --no-tags "${PJSIP_REPOSITORY}" /usr/src/pjproject \
     && cd /usr/src/pjproject \
+    && git fetch --tags --force \
+    && git checkout --detach "${PJSIP_VERSION}" \
     && ./configure --prefix=/opt/artifact --with-ssl=/opt/openssl --disable-sound --disable-video \
-    && make dep && make -j"$(nproc)" \
+    && make dep \
+    && make -j"$(nproc)" \
     && make install
 
 FROM build-base AS codec-bcg729
 ARG BCG729_VERSION
-RUN git clone --depth 1 --branch "${BCG729_VERSION}" https://github.com/BelledonneCommunications/bcg729.git /usr/src/bcg729 \
+ARG BCG729_REPOSITORY
+RUN git clone --branch main --single-branch --no-tags "${BCG729_REPOSITORY}" /usr/src/bcg729 \
+    && cd /usr/src/bcg729 \
+    && git fetch --tags --force \
+    && git checkout --detach "${BCG729_VERSION}" \
     && cmake -S /usr/src/bcg729 -B /usr/src/bcg729/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/artifact \
     && cmake --build /usr/src/bcg729/build --parallel "$(nproc)" \
     && cmake --install /usr/src/bcg729/build
 
 FROM build-base AS codec-opus
 ARG OPUS_VERSION
-RUN curl -fsSL "https://github.com/xiph/opus/releases/download/v${OPUS_VERSION}/opus-${OPUS_VERSION}.tar.gz" -o /tmp/opus.tar.gz \
-    && tar -xzf /tmp/opus.tar.gz -C /usr/src \
-    && cd "/usr/src/opus-${OPUS_VERSION}" \
+ARG OPUS_REPOSITORY
+RUN git clone --branch main --single-branch --no-tags "${OPUS_REPOSITORY}" /usr/src/opus \
+    && cd /usr/src/opus \
+    && git fetch --tags --force \
+    && git checkout --detach "v${OPUS_VERSION}" \
+    && ./autogen.sh \
     && ./configure --prefix=/opt/artifact --disable-doc \
-    && make -j"$(nproc)" && make install
+    && make -j"$(nproc)" \
+    && make install
 
 FROM build-base AS codec-openh264
 ARG OPENH264_VERSION
-RUN git clone --depth 1 --branch "v${OPENH264_VERSION}" https://github.com/cisco/openh264.git /usr/src/openh264 \
-    && make -C /usr/src/openh264 -j"$(nproc)" \
-    && make -C /usr/src/openh264 PREFIX=/opt/artifact install
+ARG OPENH264_REPOSITORY
+RUN git clone --branch main --single-branch --no-tags "${OPENH264_REPOSITORY}" /usr/src/openh264 \
+    && cd /usr/src/openh264 \
+    && git fetch --tags --force \
+    && git checkout --detach "v${OPENH264_VERSION}" \
+    && make -j"$(nproc)" \
+    && make PREFIX=/opt/artifact install
 
 FROM build-base AS asterisk
 ARG ASTERISK_VERSION
+ARG ASTERISK_REPOSITORY
 COPY --from=openssl /opt/artifact/ /opt/dependencies/
 COPY --from=pjproject /opt/artifact/ /opt/dependencies/
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
@@ -78,18 +106,22 @@ ENV LDFLAGS="-L/opt/dependencies/lib -L/opt/dependencies/lib64"
 ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64"
 RUN cp -a /opt/dependencies/. /usr/local/ \
     && ldconfig \
-    && curl -fsSL "https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz" -o /tmp/asterisk.tar.gz \
-    && tar -xzf /tmp/asterisk.tar.gz -C /usr/src \
-    && cd "/usr/src/asterisk-${ASTERISK_VERSION}" \
+    && git clone --branch main --single-branch --no-tags "${ASTERISK_REPOSITORY}" /usr/src/asterisk \
+    && cd /usr/src/asterisk \
+    && git fetch --tags --force \
+    && git checkout --detach "${ASTERISK_VERSION}" \
     && contrib/scripts/install_prereq install \
     && ./configure --with-pjproject=/usr/local --with-jansson --with-ssl=/usr/local --with-srtp \
     && make menuselect.makeopts \
     && menuselect/menuselect --enable codec_opus --enable codec_h264 --enable res_pjsip --enable res_pjsip_transport_websocket --enable chan_pjsip --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts \
     && make -j"$(nproc)" VERBOSE=1 \
-    && make install && make samples && ldconfig
+    && make install \
+    && make samples \
+    && ldconfig
 
 FROM build-base AS codec-g729
 ARG ASTERISK_G72X_COMMIT
+ARG ASTERISK_G72X_REPOSITORY
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
@@ -97,16 +129,23 @@ ENV PKG_CONFIG_PATH="/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkg
 ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64:/usr/local/lib"
 RUN cp -a /opt/dependencies/. /usr/local/ \
     && ldconfig \
-    && git clone --depth 1 https://github.com/arkadijs/asterisk-g72x.git /usr/src/asterisk-g72x \
-    && cd /usr/src/asterisk-g72x && git checkout "${ASTERISK_G72X_COMMIT}" \
+    && git clone --branch main --single-branch --no-tags "${ASTERISK_G72X_REPOSITORY}" /usr/src/asterisk-g72x \
+    && cd /usr/src/asterisk-g72x \
+    && git fetch --all --force \
+    && git checkout --detach "${ASTERISK_G72X_COMMIT}" \
     && ./autogen.sh \
     && ./configure --with-asterisk160 --with-bcg729 --with-asterisk-includes=/usr/include --prefix=/usr \
-    && make -j"$(nproc)" && make DESTDIR=/opt/artifact install
+    && make -j"$(nproc)" \
+    && make DESTDIR=/opt/artifact install
 
 FROM debian:12-slim AS freepbx
 ARG FREEPBX_REF
+ARG FREEPBX_REPOSITORY
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git rsync \
-    && git clone --depth 1 --branch "${FREEPBX_REF}" https://github.com/FreePBX/framework.git /opt/freepbx \
+    && git clone --branch main --single-branch --no-tags "${FREEPBX_REPOSITORY}" /opt/freepbx \
+    && cd /opt/freepbx \
+    && git fetch --all --force \
+    && git checkout --detach "${FREEPBX_REF}" \
     && rm -rf /var/lib/apt/lists/*
 
 FROM debian:12-slim AS final
