@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apache2 php8.2 php8.2-cli php8.2-common php8.2-mysql php8.2-curl php8.2-gd \
     php8.2-mbstring php8.2-xml php8.2-zip php8.2-bcmath php8.2-soap php8.2-intl \
     php8.2-ldap php8.2-imap nodejs npm composer rsync procps iproute2 net-tools \
-    iputils-ping netcat-openbsd util-linux \
+    iputils-ping netcat-openbsd util-linux libsrtp2-dev libopus-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN id asterisk >/dev/null 2>&1 || useradd --system --home /var/lib/asterisk --create-home --shell /usr/sbin/nologin asterisk
@@ -42,7 +42,21 @@ RUN mkdir -p /usr/src && cd /usr/src \
     && cmake --build bcg729/build --parallel "$(nproc)" && cmake --install bcg729/build \
     && ldconfig && rm -rf bcg729
 
-# Build Asterisk 22 LTS with pjproject bundled by Asterisk itself.
+# Opus must be available before Asterisk's configure/menuselect phase so codec_opus
+# is detected and compiled into the Asterisk installation.
+RUN mkdir -p /usr/src && cd /usr/src \
+    && curl -fsSL https://github.com/xiph/opus/releases/download/v${OPUS_VERSION}/opus-${OPUS_VERSION}.tar.gz -o opus.tar.gz \
+    && tar -xzf opus.tar.gz && cd opus-${OPUS_VERSION} \
+    && ./configure --prefix=/usr --disable-doc && make -j"$(nproc)" && make install \
+    && ldconfig && cd / && rm -rf /usr/src/opus*
+
+RUN mkdir -p /usr/src && cd /usr/src \
+    && git clone --depth 1 --branch v${OPENH264_VERSION} https://github.com/cisco/openh264.git openh264 \
+    && make -C openh264 -j"$(nproc)" && make -C openh264 PREFIX=/usr install \
+    && ldconfig && rm -rf openh264
+
+# Build Asterisk 22 LTS with the pjproject version selected and validated by the
+# Asterisk release itself. Do not substitute an arbitrary latest pjproject release.
 RUN mkdir -p /usr/src && cd /usr/src \
     && curl -fsSL https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz -o asterisk.tar.gz \
     && tar -xzf asterisk.tar.gz && cd asterisk-${ASTERISK_VERSION} \
@@ -51,8 +65,9 @@ RUN mkdir -p /usr/src && cd /usr/src \
     && make menuselect.makeopts \
     && menuselect/menuselect --enable codec_opus --enable codec_h264 \
          --enable res_pjsip --enable res_pjsip_transport_websocket --enable chan_pjsip \
-         --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts || true \
-    && make -j"$(nproc)" && make install && make samples && ldconfig \
+         --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts \
+    && make -j"$(nproc)" VERBOSE=1 \
+    && make install && make samples && ldconfig \
     && cd / && rm -rf /usr/src/asterisk*
 
 # Build the GPL codec module against the installed Asterisk 22 headers. The pinned
@@ -64,17 +79,6 @@ RUN mkdir -p /usr/src && cd /usr/src \
     && ./configure --with-asterisk160 --with-bcg729 --with-asterisk-includes=/usr/include --prefix=/usr \
     && make -j"$(nproc)" && make install \
     && ldconfig && cd / && rm -rf /usr/src/asterisk-g72x
-
-RUN mkdir -p /usr/src && cd /usr/src \
-    && git clone --depth 1 --branch v${OPENH264_VERSION} https://github.com/cisco/openh264.git openh264 \
-    && make -C openh264 -j"$(nproc)" && make -C openh264 PREFIX=/usr install \
-    && ldconfig && rm -rf openh264
-
-RUN mkdir -p /usr/src && cd /usr/src \
-    && curl -fsSL https://github.com/xiph/opus/releases/download/v${OPUS_VERSION}/opus-${OPUS_VERSION}.tar.gz -o opus.tar.gz \
-    && tar -xzf opus.tar.gz && cd opus-${OPUS_VERSION} \
-    && ./configure --prefix=/usr --disable-doc && make -j"$(nproc)" && make install \
-    && ldconfig && cd / && rm -rf /usr/src/opus*
 
 RUN mkdir -p /usr/src/freepbx \
     && git clone --depth 1 --branch ${FREEPBX_REF} https://github.com/FreePBX/framework.git /usr/src/freepbx \
