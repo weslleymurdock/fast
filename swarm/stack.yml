@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  freepbx:
+    image: ${FREEPBX_IMAGE:-ghcr.io/weslleymurdock/fast:freepbx17-asterisk22}
+    network_mode: host
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+      DB_HOST: ${DB_HOST:?DB_HOST is required for Swarm production}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-asterisk}
+      DB_CDR_NAME: ${DB_CDR_NAME:-asteriskcdrdb}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
+      RTP_START: ${RTP_START:-10000}
+      RTP_END: ${RTP_END:-20000}
+    volumes:
+      - asterisk_etc:/etc/asterisk
+      - asterisk_lib:/var/lib/asterisk
+      - asterisk_spool:/var/spool/asterisk
+      - asterisk_logs:/var/log/asterisk
+      - freepbx_www:/var/www/html
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.voip == true
+
+volumes:
+  asterisk_etc:
+  asterisk_lib:
+  asterisk_spool:
+  asterisk_logs:
+  freepbx_www:
