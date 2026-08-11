@@ -12,6 +12,7 @@ ARG BCG729_REPOSITORY=https://github.com/BelledonneCommunications/bcg729.git
 ARG OPENH264_VERSION=2.3.0
 ARG OPENH264_REPOSITORY=https://github.com/cisco/openh264.git
 ARG OPUS_VERSION=1.4.0
+ARG OPUS_BRANCH=1.4
 ARG OPUS_REPOSITORY=https://github.com/xiph/opus.git
 ARG ASTERISK_G72X_COMMIT=55a7b8246c8ad3f32e50a033529e5a52c11a5592
 ARG ASTERISK_G72X_REPOSITORY=https://github.com/arkadijs/asterisk-g72x.git
@@ -51,9 +52,9 @@ RUN git clone --branch "${BCG729_VERSION}" "${BCG729_REPOSITORY}" /usr/src/bcg72
     && cmake --install /usr/src/bcg729/build
 
 FROM build-base AS codec-opus
-ARG OPUS_VERSION
+ARG OPUS_BRANCH
 ARG OPUS_REPOSITORY
-RUN git clone --branch "v${OPUS_VERSION}" "${OPUS_REPOSITORY}" /usr/src/opus \
+RUN git clone --branch "${OPUS_BRANCH}" "${OPUS_REPOSITORY}" /usr/src/opus \
     && cd /usr/src/opus \
     && ./autogen.sh \
     && ./configure --prefix=/opt/artifact --disable-doc \
