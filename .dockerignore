@@ -1,0 +1,10 @@
+.git
+.gitignore
+.github
+.env
+.env.*
+compose/.env
+swarm/.env
+README.md
+LICENSE
+*.log
