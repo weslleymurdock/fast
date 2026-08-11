@@ -10,6 +10,7 @@ ARG OPENSSL_REPOSITORY=https://github.com/openssl/openssl.git
 ARG BCG729_VERSION=1.1.1
 ARG BCG729_REPOSITORY=https://github.com/BelledonneCommunications/bcg729.git
 ARG OPENH264_VERSION=2.3.0
+ARG OPENH264_TAG=v2.3.0
 ARG OPENH264_REPOSITORY=https://github.com/cisco/openh264.git
 ARG OPUS_VERSION=1.4.0
 ARG OPUS_BRANCH=v1.4
@@ -62,9 +63,9 @@ RUN git clone --branch "${OPUS_BRANCH}" "${OPUS_REPOSITORY}" /usr/src/opus \
     && make install
 
 FROM build-base AS codec-openh264
-ARG OPENH264_VERSION
+ARG OPENH264_TAG
 ARG OPENH264_REPOSITORY
-RUN git clone --branch "v${OPENH264_VERSION}" "${OPENH264_REPOSITORY}" /usr/src/openh264 \
+RUN git clone --branch "${OPENH264_TAG}" "${OPENH264_REPOSITORY}" /usr/src/openh264 \
     && cd /usr/src/openh264 \
     && make -j"$(nproc)" \
     && make PREFIX=/opt/artifact install
