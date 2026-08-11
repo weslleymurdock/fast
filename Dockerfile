@@ -2,7 +2,7 @@
 
 ARG ASTERISK_VERSION=22.10.1
 ARG ASTERISK_REPOSITORY=https://github.com/asterisk/asterisk.git
-ARG PJSIP_VERSION=2.17
+ARG PJSIP_VERSION=v2.17
 ARG PJSIP_REPOSITORY=https://github.com/pjsip/pjproject.git
 ARG OPENSSL_VERSION=1_1_1s
 ARG OPENSSL_TAG=OpenSSL_1_1_1s
