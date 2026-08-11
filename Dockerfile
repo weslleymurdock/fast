@@ -14,7 +14,6 @@ ARG OPUS_VERSION=1.4.0
 ARG OPUS_REPOSITORY=https://github.com/xiph/opus.git
 ARG ASTERISK_G72X_COMMIT=55a7b8246c8ad3f32e50a033529e5a52c11a5592
 ARG ASTERISK_G72X_REPOSITORY=https://github.com/arkadijs/asterisk-g72x.git
-ARG FREEPBX_REF=release/17.0
 ARG FREEPBX_REPOSITORY=https://github.com/FreePBX/framework.git
 
 FROM debian:12-slim AS build-base
@@ -139,13 +138,9 @@ RUN cp -a /opt/dependencies/. /usr/local/ \
     && make DESTDIR=/opt/artifact install
 
 FROM debian:12-slim AS freepbx
-ARG FREEPBX_REF
 ARG FREEPBX_REPOSITORY
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git rsync \
-    && git clone --branch main --single-branch --no-tags "${FREEPBX_REPOSITORY}" /opt/freepbx \
-    && cd /opt/freepbx \
-    && git fetch --all --force \
-    && git checkout --detach "${FREEPBX_REF}" \
+    && git clone "${FREEPBX_REPOSITORY}" /opt/freepbx \
     && rm -rf /var/lib/apt/lists/*
 
 FROM debian:12-slim AS final
@@ -156,10 +151,9 @@ ARG OPENSSL_VERSION
 ARG BCG729_VERSION
 ARG OPENH264_VERSION
 ARG OPUS_VERSION
-ARG FREEPBX_REF
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=America/Sao_Paulo \
     ASTERISK_VERSION=${ASTERISK_VERSION} PJSIP_VERSION=${PJSIP_VERSION} OPENSSL_VERSION=${OPENSSL_VERSION} \
-    BCG729_VERSION=${BCG729_VERSION} OPENH264_VERSION=${OPENH264_VERSION} OPUS_VERSION=${OPUS_VERSION} FREEPBX_REF=${FREEPBX_REF} \
+    BCG729_VERSION=${BCG729_VERSION} OPENH264_VERSION=${OPENH264_VERSION} OPUS_VERSION=${OPUS_VERSION} \
     RTP_START=10000 RTP_END=20000 PJSIP_UDP_PORT=5060 PJSIP_TCP_PORT=5060 PJSIP_TLS_PORT=5061 \
     HTTP_PORT=80 HTTPS_PORT=443 DB_PORT=3306 DB_NAME=asterisk DB_CDR_NAME=asteriskcdrdb DB_USER=asterisk
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
