@@ -4,8 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize]
   push:
-    branches:
-      - main
     tags:
       - 'v*'
 
@@ -41,7 +39,7 @@ jobs:
 
   publish:
     name: Build and publish image
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,26 +60,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/fast"
-          sha="${GITHUB_SHA}"
-
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            version="${GITHUB_REF_NAME#v}"
-            {
-              echo "tags<<EOF"
-              echo "${image}:${GITHUB_REF_NAME}"
-              echo "${image}:${version}"
-              echo "EOF"
-            } >> "${GITHUB_OUTPUT}"
-          else
-            {
-              echo "tags<<EOF"
-              echo "${image}:main-${sha}"
-              echo "${image}:main-${sha:0:12}"
-              echo "EOF"
-            } >> "${GITHUB_OUTPUT}"
-          fi
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "tags<<EOF"
+            echo "${image}:${GITHUB_REF_NAME}"
+            echo "${image}:${version}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Build and publish
         uses: docker/build-push-action@v6
