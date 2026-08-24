@@ -37,8 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM build-base AS openssl
 ARG OPENSSL_TAG
 ARG OPENSSL_REPOSITORY
-RUN git clone --branch "${OPENSSL_TAG}" "${OPENSSL_REPOSITORY}" /usr/src/openssl --recursive \
+RUN git clone "${OPENSSL_REPOSITORY}" /usr/src/openssl --recursive \
     && cd /usr/src/openssl \
+    && git fetch --tags --force \
+    && git checkout --detach "${OPENSSL_TAG}" \
     && ./config --prefix=/opt/artifact --openssldir=/opt/artifact/ssl shared no-tests \
     && make -j"$(nproc)" \
     && make install_sw
@@ -46,8 +48,10 @@ RUN git clone --branch "${OPENSSL_TAG}" "${OPENSSL_REPOSITORY}" /usr/src/openssl
 FROM build-base AS codec-bcg729
 ARG BCG729_VERSION
 ARG BCG729_REPOSITORY
-RUN git clone --branch "${BCG729_VERSION}" "${BCG729_REPOSITORY}" /usr/src/bcg729 \
+RUN git clone "${BCG729_REPOSITORY}" /usr/src/bcg729 \
     && cd /usr/src/bcg729 \
+    && git fetch --tags --force \
+    && git checkout --detach "${BCG729_VERSION}" \
     && cmake -S /usr/src/bcg729 -B /usr/src/bcg729/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/artifact \
     && cmake --build /usr/src/bcg729/build --parallel "$(nproc)" \
     && cmake --install /usr/src/bcg729/build
@@ -55,8 +59,10 @@ RUN git clone --branch "${BCG729_VERSION}" "${BCG729_REPOSITORY}" /usr/src/bcg72
 FROM build-base AS codec-opus
 ARG OPUS_BRANCH
 ARG OPUS_REPOSITORY
-RUN git clone --branch "${OPUS_BRANCH}" "${OPUS_REPOSITORY}" /usr/src/opus \
+RUN git clone "${OPUS_REPOSITORY}" /usr/src/opus \
     && cd /usr/src/opus \
+    && git fetch --tags --force \
+    && git checkout --detach "${OPUS_BRANCH}" \
     && ./autogen.sh \
     && ./configure --prefix=/opt/artifact --disable-doc \
     && make -j"$(nproc)" \
@@ -65,8 +71,10 @@ RUN git clone --branch "${OPUS_BRANCH}" "${OPUS_REPOSITORY}" /usr/src/opus \
 FROM build-base AS codec-openh264
 ARG OPENH264_TAG
 ARG OPENH264_REPOSITORY
-RUN git clone --branch "${OPENH264_TAG}" "${OPENH264_REPOSITORY}" /usr/src/openh264 \
+RUN git clone "${OPENH264_REPOSITORY}" /usr/src/openh264 \
     && cd /usr/src/openh264 \
+    && git fetch --tags --force \
+    && git checkout --detach "${OPENH264_TAG}" \
     && make -j"$(nproc)" \
     && make PREFIX=/opt/artifact install
 
@@ -81,8 +89,10 @@ ENV PKG_CONFIG_PATH="/opt/openssl/lib/pkgconfig:/opt/bcg729/lib/pkgconfig:/opt/o
 ENV CPPFLAGS="-I/opt/bcg729/include -I/opt/openh264/include -I/opt/openssl/include -I/opt/opus/include"
 ENV LDFLAGS="-L/opt/bcg729/lib -L/opt/openh264/lib -L/opt/openssl/lib -L/opt/opus/lib"
 ENV LD_LIBRARY_PATH="/opt/bcg729/lib:/opt/openh264/lib:/opt/openssl/lib:/opt/opus/lib"
-RUN git clone --branch "${PJSIP_VERSION}" "${PJSIP_REPOSITORY}" /usr/src/pjproject \
+RUN git clone "${PJSIP_REPOSITORY}" /usr/src/pjproject \
     && cd /usr/src/pjproject \
+    && git fetch --tags --force \
+    && git checkout --detach "${PJSIP_VERSION}" \
     && ./configure --prefix=/opt/artifact --with-bcg729=/opt/bcg729 --with-openh264=/opt/openh264 --with-ssl=/opt/openssl --with-opus=/opt/opus \
     && make dep \
     && make -j"$(nproc)" \
@@ -102,7 +112,7 @@ ENV LDFLAGS="-L/opt/dependencies/lib -L/opt/dependencies/lib64"
 ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64"
 RUN cp -a /opt/dependencies/. /usr/local/ \
     && ldconfig \
-    && git clone --branch main --single-branch --no-tags "${ASTERISK_REPOSITORY}" /usr/src/asterisk \
+    && git clone "${ASTERISK_REPOSITORY}" /usr/src/asterisk \
     && cd /usr/src/asterisk \
     && git fetch --tags --force \
     && git checkout --detach "${ASTERISK_VERSION}" \
@@ -150,7 +160,7 @@ ARG OPENH264_VERSION
 ARG OPUS_VERSION
 LABEL \
     org.opencontainers.image.title="FAST FreePBX + Asterisk" \
-    org.opencontainers.image.description="Production-ready FreePBX and Asterisk VoIP image with PJSIP, video and common codecs" \
+    org.opencontainers.image.description="Production-ready FreePBX and Asterisk image with PJSIP, video and common codecs" \
     org.opencontainers.image.vendor="Weslley Murdock" \
     org.opencontainers.image.authors="Weslley Murdock" \
     org.opencontainers.image.source="https://github.com/weslleymurdock/fast" \
