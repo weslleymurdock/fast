@@ -1,0 +1,32 @@
+services:
+  freepbx:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        ASTERISK_VERSION: "22.10.1"
+        FREEPBX_REF: "release/17.0"
+    image: ghcr.io/weslleymurdock/fast:f17ast22
+    network_mode: host
+    env_file:
+      - ../.env
+    environment:
+      DB_HOST: ""
+      DB_PORT: 3306
+      RTP_START: ${RTP_START:-10000}
+      RTP_END: ${RTP_END:-20000}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - asterisk_etc:/etc/asterisk
+      - asterisk_lib:/var/lib/asterisk
+      - asterisk_spool:/var/spool/asterisk
+      - asterisk_logs:/var/log/asterisk
+      - freepbx_www:/var/www/html
+
+volumes:
+  mariadb_data:
+  asterisk_etc:
+  asterisk_lib:
+  asterisk_spool:
+  asterisk_logs:
+  freepbx_www:
