@@ -6,7 +6,7 @@ services:
       args:
         ASTERISK_VERSION: "22.10.1"
         FREEPBX_REF: "release/17.0"
-    image: ghcr.io/weslleymurdock/fast:freepbx17-asterisk22
+    image: ghcr.io/weslleymurdock/fast:f17ast22
     network_mode: host
     env_file:
       - ../.env

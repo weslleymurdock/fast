@@ -44,7 +44,7 @@ fi
 
 log 'Ensuring FreePBX databases and user exist.'
 MYSQL_ROOT=(mariadb --host="$DB_HOST" --port="$DB_PORT" --user=root --password="$DB_ROOT_PASSWORD")
-"${MYSQL_ROOT[@]}" -e "CREATE DATABASE IF NOT EXISTS \\`$DB_NAME\\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS \\`$DB_CDR_NAME\\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD'; ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD'; GRANT ALL PRIVILEGES ON \\`$DB_NAME\\`.* TO '$DB_USER'@'%'; GRANT ALL PRIVILEGES ON \\`$DB_CDR_NAME\\`.* TO '$DB_USER'@'%'; FLUSH PRIVILEGES;" || fatal 'Could not provision FreePBX databases. Verify DB_ROOT_PASSWORD and external MariaDB privileges.'
+"${MYSQL_ROOT[@]}" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS \`$DB_CDR_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD'; ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD'; GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%'; GRANT ALL PRIVILEGES ON \`$DB_CDR_NAME\`.* TO '$DB_USER'@'%'; FLUSH PRIVILEGES;" || fatal 'Could not provision FreePBX databases. Verify DB_ROOT_PASSWORD and external MariaDB privileges.'
 
 cat > /etc/odbcinst.ini <<'EOF'
 [MariaDB]
