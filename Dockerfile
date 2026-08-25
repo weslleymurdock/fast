@@ -121,7 +121,7 @@ RUN cp -a /opt/dependencies/. /usr/local/ \
     && make -j"$(nproc)" VERBOSE=1 \
     && make install \
     && make samples \
-    && ldconfig
+    && ldconfig 
 
 FROM build-base AS codec-g729
 ARG ASTERISK_G72X_COMMIT
@@ -129,8 +129,7 @@ ARG ASTERISK_G72X_REPOSITORY
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
-COPY --from=asterisk /usr/local/include/asterisk.h /usr/include/asterisk.h
-COPY --from=asterisk /usr/local/include/asterisk/ /usr/include/asterisk/
+COPY --from=asterisk /usr/src/asterisk /usr/src/asterisk
 ENV PKG_CONFIG_PATH="/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig"
 ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64:/usr/local/lib"
 RUN cp -a /opt/dependencies/. /usr/local/ \
@@ -140,9 +139,9 @@ RUN cp -a /opt/dependencies/. /usr/local/ \
     && git fetch --all --force \
     && git checkout --detach "${ASTERISK_G72X_COMMIT}" \
     && ./autogen.sh \
-    && ./configure --with-asterisk160 --with-bcg729 --with-asterisk-includes=/usr/include --prefix=/usr \
+    && ./configure --with-asterisk160 --with-bcg729 --with-asterisk-includes=/usr/src/asterisk/include --prefix=/usr \
     && make -j"$(nproc)" \
-    && make DESTDIR=/opt/artifact install
+    && make DESTDIR=/opt/artifact install 
 
 FROM debian:12-slim AS freepbx
 ARG FREEPBX_REPOSITORY
