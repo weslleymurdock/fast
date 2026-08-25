@@ -159,7 +159,3 @@ Also verify that:
 8. WSS/WebRTC works if enabled.
 9. Apache/FreePBX remains healthy after an Asterisk reload.
 10. The container restarts without losing configuration or recordings.
-
-## Known scope of this first PR
-
-This PR deliberately focuses on the reproducible image and Compose/Swarm runtime foundation. It does not claim that every optional FreePBX module, telephony hardware driver, NAT topology, WebRTC certificate setup, or HA scenario is production-ready. Those require deployment-specific validation.

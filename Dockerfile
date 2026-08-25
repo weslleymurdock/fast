@@ -83,7 +83,14 @@ ENV LDFLAGS="-L/opt/bcg729/lib -L/opt/openh264/lib -L/opt/openssl/lib -L/opt/opu
 ENV LD_LIBRARY_PATH="/opt/bcg729/lib:/opt/openh264/lib:/opt/openssl/lib:/opt/opus/lib"
 RUN git clone "${PJSIP_REPOSITORY}" -b "${PJSIP_VERSION}" /usr/src/pjproject 
 WORKDIR /usr/src/pjproject 
-RUN ./configure --prefix=/opt/artifact --with-bcg729=/opt/bcg729 --with-openh264=/opt/openh264 --with-ssl=/opt/openssl --with-opus=/opt/opus \
+RUN ./configure \
+    --prefix=/opt/artifact \
+    --enable-shared \
+    --disable-static \
+    --with-bcg729=/opt/bcg729 \
+    --with-openh264=/opt/openh264 \
+    --with-ssl=/opt/openssl \
+    --with-opus=/opt/opus \
     && make dep \
     && make -j"$(nproc)" \
     && make install
@@ -109,6 +116,10 @@ RUN cp -a /opt/dependencies/. /usr/local/ \
     && apt-get update \
     && contrib/scripts/install_prereq install \
     && ./configure --with-pjproject=/usr/local --with-jansson --with-ssl=/usr/local --with-srtp \
+    && echo "===== MAKEOPTS BEFORE =====" \
+    && nl -ba makeopts | sed -n '225,245p' \
+    && echo "===== CONFIG LOG PJPROJECT =====" \
+    && grep -i -E "pjproject|pjmedia|pjsip" config.log | tail -50 \
     && make menuselect.makeopts \
     && menuselect/menuselect --enable codec_opus --enable format_h264 --enable res_pjsip --enable res_pjsip_transport_websocket --enable chan_pjsip --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts \
     && make -j"$(nproc)" VERBOSE=1 \
