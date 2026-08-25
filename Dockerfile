@@ -185,9 +185,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libspeexdsp1 libogg0 libvorbis0a libasound2 libsamplerate0 libsndfile1 libneon27 \
     libsnmp40 libldap-2.5-0 libunbound8 liburiparser1 libpq5 libodbc2 libical3 liblua5.4-0 \
     libsystemd0 libfftw3-double3 libcodec2-1.0 libgsm1 libmpg123-0 libspandsp2 libpopt0 \
-    libcap2 libdb5.3 libmariadb3 libsrtp2-1 libopus0 \
+    libcap2 libdb5.3 libmariadb3 libsrtp2-1 libopus0 cron\
     && rm -rf /var/lib/apt/lists/*
 RUN id asterisk >/dev/null 2>&1 || useradd --system --home /var/lib/asterisk --create-home --shell /usr/sbin/nologin asterisk
+RUN mkdir -p /var/spool/asterisk/tmp && chown -R asterisk:asterisk /var/spool/asterisk
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /usr/sbin/ /usr/sbin/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/

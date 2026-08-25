@@ -46,11 +46,21 @@ services:
       - asterisk_spool:/var/spool/asterisk
       - asterisk_logs:/var/log/asterisk
       - freepbx_www:/var/www/html
-      - ./entrypoint.sh:/usr/local/bin/fast-freepbx-entrypoint
+      - pbx_logs:/var/log/pbx
+
 volumes:
   mariadb_data:
+    driver: local
   asterisk_etc:
+    driver: local
   asterisk_lib:
+    driver: local
   asterisk_spool:
+    driver: local
   asterisk_logs:
+    driver: local
   freepbx_www:
+    driver: local
+  pbx_logs: 
+    driver: local
+    
