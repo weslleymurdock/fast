@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   freepbx:
-    image: ${FREEPBX_IMAGE:-ghcr.io/weslleymurdock/fast:freepbx17-asterisk22}
+    image: ${FREEPBX_IMAGE:-ghcr.io/weslleymurdock/fast:f17-ast22}
     network_mode: host
     environment:
       TZ: ${TZ:-America/Sao_Paulo}
