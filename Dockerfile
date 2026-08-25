@@ -115,11 +115,7 @@ RUN cp -a /opt/dependencies/. /usr/local/ \
     && git checkout --detach "${ASTERISK_VERSION}" \
     && apt-get update \
     && contrib/scripts/install_prereq install \
-    && ./configure --with-pjproject=/usr/local --with-jansson --with-ssl=/usr/local --with-srtp \
-    && echo "===== MAKEOPTS BEFORE =====" \
-    && nl -ba makeopts | sed -n '225,245p' \
-    && echo "===== CONFIG LOG PJPROJECT =====" \
-    && grep -i -E "pjproject|pjmedia|pjsip" config.log | tail -50 \
+    && ./configure --with-pjproject=/usr/local --without-pjproject-bundled --with-jansson --with-ssl=/usr/local --with-srtp \
     && make menuselect.makeopts \
     && menuselect/menuselect --enable codec_opus --enable format_h264 --enable res_pjsip --enable res_pjsip_transport_websocket --enable chan_pjsip --enable res_http_websocket --enable res_rtp_asterisk --enable res_srtp menuselect.makeopts \
     && make -j"$(nproc)" VERBOSE=1 \
