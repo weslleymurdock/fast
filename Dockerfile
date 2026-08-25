@@ -129,6 +129,8 @@ ARG ASTERISK_G72X_REPOSITORY
 COPY --from=codec-bcg729 /opt/artifact/ /opt/dependencies/
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
+COPY --from=asterisk /usr/local/include/asterisk.h /usr/include/asterisk.h
+COPY --from=asterisk /usr/local/include/asterisk/ /usr/include/asterisk/
 ENV PKG_CONFIG_PATH="/opt/dependencies/lib/pkgconfig:/opt/dependencies/lib64/pkgconfig"
 ENV LD_LIBRARY_PATH="/opt/dependencies/lib:/opt/dependencies/lib64:/usr/local/lib"
 RUN cp -a /opt/dependencies/. /usr/local/ \
