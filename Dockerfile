@@ -67,8 +67,7 @@ ARG OPENH264_TAG
 ARG OPENH264_REPOSITORY
 RUN git clone "${OPENH264_REPOSITORY}" -b "${OPENH264_TAG}" /usr/src/openh264 
 WORKDIR /usr/src/openh264 
-RUN make -j"$(nproc)" \
-    && make PREFIX=/opt/artifact install
+RUN make -j"$(nproc)" && make PREFIX=/opt/artifact install
 
 FROM build-base AS pjproject
 ARG PJSIP_VERSION
@@ -83,8 +82,7 @@ ENV LDFLAGS="-L/opt/bcg729/lib -L/opt/openh264/lib -L/opt/openssl/lib -L/opt/opu
 ENV LD_LIBRARY_PATH="/opt/bcg729/lib:/opt/openh264/lib:/opt/openssl/lib:/opt/opus/lib"
 RUN git clone "${PJSIP_REPOSITORY}" -b "${PJSIP_VERSION}" /usr/src/pjproject 
 WORKDIR /usr/src/pjproject 
-RUN ./configure \
-    --prefix=/opt/artifact \
+RUN ./configure --prefix=/opt/artifact \
     --enable-shared \
     --disable-static \
     --with-bcg729=/opt/bcg729 \
@@ -169,7 +167,7 @@ LABEL \
     io.fast.openssl.version="${OPENSSL_VERSION}" \
     io.fast.openh264.version="${OPENH264_VERSION}" \
     io.fast.opus.version="${OPUS_VERSION}" \
-    io.fast.bcg729.version="${BCG729_VERSION}"
+    io.fast.bcg729.version="${BCG729_VERSION}" 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=America/Sao_Paulo \
     ASTERISK_VERSION=${ASTERISK_VERSION} PJSIP_VERSION=${PJSIP_VERSION} OPENSSL_VERSION=${OPENSSL_VERSION} \
     BCG729_VERSION=${BCG729_VERSION} OPENH264_VERSION=${OPENH264_VERSION} OPUS_VERSION=${OPUS_VERSION} \
@@ -188,6 +186,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcap2 libdb5.3 libmariadb3 libsrtp2-1 libopus0 \
     && rm -rf /var/lib/apt/lists/*
 RUN apt update && apt install nmap cron -y
+RUN id asterisk >/dev/null 2>&1 || useradd --system --home /var/lib/asterisk --create-home --shell /usr/sbin/nologin asterisk
 COPY --from=asterisk /usr/local/ /usr/local/
 COPY --from=asterisk /usr/sbin/ /usr/sbin/
 COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
