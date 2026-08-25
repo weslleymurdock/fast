@@ -194,6 +194,7 @@ COPY --from=asterisk /etc/asterisk/ /etc/asterisk/
 COPY --from=asterisk /var/lib/asterisk/ /var/lib/asterisk/
 COPY --from=asterisk /var/spool/asterisk/ /var/spool/asterisk/
 COPY --from=asterisk /var/log/asterisk/ /var/log/asterisk/
+COPY --from=asterisk /lib/libasteriskssl.so* /lib/
 COPY --from=codec-g729 /opt/artifact/ /
 COPY --from=freepbx /opt/freepbx/ /var/www/html/
 COPY docker/entrypoint.sh /usr/local/bin/fast-freepbx-entrypoint
