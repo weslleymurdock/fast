@@ -23,7 +23,7 @@ FROM debian:12-slim AS build-base
 ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl wget git xz-utils bzip2 unzip file patch \
+    ca-certificates curl wget git xz-utils bzip2 unzip file patch nasm \
     build-essential autoconf automake libtool pkg-config cmake meson ninja-build \
     libxml2-dev libncurses5-dev libsqlite3-dev uuid-dev libjansson-dev \
     libedit-dev libcurl4-openssl-dev libspeex-dev libspeexdsp-dev libogg-dev libvorbis-dev \
@@ -210,7 +210,7 @@ RUN ldconfig && a2enmod rewrite headers expires proxy proxy_http ssl setenvif \
     && mkdir -p /etc/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk /var/log/pbx \
     && chown -R asterisk:asterisk /etc/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk /var/www/html \
     && chmod +x /usr/local/bin/fast-freepbx-entrypoint /usr/local/bin/fast-freepbx-healthcheck
-VOLUME ["/etc/asterisk", "/var/lib/asterisk", "/var/spool/asterisk", "/var/log/asterisk", "/var/www/html", "/var/lib/mysql"]
+VOLUME ["/etc/asterisk", "/var/lib/asterisk", "/var/spool/asterisk", "/var/log/asterisk", "/var/lib/mysql"]
 EXPOSE 5060/udp 5060/tcp 5061/tcp 80/tcp 443/tcp 8088/tcp 10000-20000/udp
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 CMD ["/usr/local/bin/fast-freepbx-healthcheck"]
 STOPSIGNAL SIGTERM
